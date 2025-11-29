@@ -1,0 +1,31 @@
+# Netlify Redirects for eJustice Portal
+# This file routes all PHP requests to your external backend while serving static assets locally
+
+# IMPORTANT: Replace BACKEND_URL with your actual deployed backend URL
+# Example: https://ejustice-backend-production.railway.app
+# Or: https://ejustice-backend-production.onrender.com
+
+# Route all PHP files and requests to backend (preserve cookies and session data)
+/api/*                                  BACKEND_URL/:splat                                 200!
+/index.php                              BACKEND_URL/index.php                              200!
+/login.php                              BACKEND_URL/login.php                              200!
+/register.php                           BACKEND_URL/register.php                           200!
+/logout.php                             BACKEND_URL/logout.php                             200!
+/dashboard.php                          BACKEND_URL/dashboard.php                          200!
+/cases.php                              BACKEND_URL/cases.php                              200!
+/case_view.php                          BACKEND_URL/case_view.php                          200!
+/file_case.php                          BACKEND_URL/file_case.php                          200!
+/upload_document.php                    BACKEND_URL/upload_document.php                    200!
+/view_document.php                      BACKEND_URL/view_document.php                      200!
+/audit_logs.php                         BACKEND_URL/audit_logs.php                         200!
+/barangay_dashboard.php                 BACKEND_URL/barangay_dashboard.php                 200!
+/barangay_mediation.php                 BACKEND_URL/barangay_mediation.php                 200!
+/barangay_record_entry.php              BACKEND_URL/barangay_record_entry.php              200!
+/barangay_settlement_form.php           BACKEND_URL/barangay_settlement_form.php           200!
+/seed_demo_users.php                    BACKEND_URL/seed_demo_users.php                    200!
+
+# Catch-all: any other PHP-like requests go to backend
+/:path(*).php                           BACKEND_URL/:path.php                              200!
+
+# SPA fallback (if you add a front-end framework later; comment out if not needed)
+# /*                                      /index.html                                        200

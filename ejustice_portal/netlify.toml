@@ -1,0 +1,152 @@
+# Netlify Configuration for eJustice Portal + External PHP Backend
+# ====================================================================
+# This file proxies all PHP requests to your external backend (Railway, Render, Cloud Run)
+# and serves static assets (CSS, JS, images) from Netlify's CDN.
+#
+# SETUP REQUIRED:
+# 1. Replace BACKEND_URL below with your actual backend URL (e.g., https://ejustice-backend.railway.app)
+# 2. Commit and push this file
+# 3. Netlify will auto-redeploy
+
+[build]
+  # Netlify serves files from the public directory
+  publish = "public"
+  # No build step needed (this is static frontend only)
+  command = ""
+
+# ====================================================================
+# PROXY RULES: Route PHP requests to backend while preserving sessions
+# ====================================================================
+# IMPORTANT: Replace BACKEND_URL with your actual backend URL
+
+# Main API and core pages (login, dashboard, etc.)
+[[redirects]]
+  from = "/api/*"
+  to = "BACKEND_URL/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/index.php*"
+  to = "BACKEND_URL/index.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/login.php*"
+  to = "BACKEND_URL/login.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/register.php*"
+  to = "BACKEND_URL/register.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/logout.php*"
+  to = "BACKEND_URL/logout.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/dashboard.php*"
+  to = "BACKEND_URL/dashboard.php"
+  status = 200
+  force = true
+
+# Cases and documents
+[[redirects]]
+  from = "/cases.php*"
+  to = "BACKEND_URL/cases.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/case_view.php*"
+  to = "BACKEND_URL/case_view.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/file_case.php*"
+  to = "BACKEND_URL/file_case.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/upload_document.php*"
+  to = "BACKEND_URL/upload_document.php"
+  status = 200
+  force = true
+  headers = { "X-Request-Timeout" = "120" }
+
+[[redirects]]
+  from = "/view_document.php*"
+  to = "BACKEND_URL/view_document.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/audit_logs.php*"
+  to = "BACKEND_URL/audit_logs.php"
+  status = 200
+  force = true
+
+# Barangay module pages
+[[redirects]]
+  from = "/barangay_dashboard.php*"
+  to = "BACKEND_URL/barangay_dashboard.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/barangay_mediation.php*"
+  to = "BACKEND_URL/barangay_mediation.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/barangay_record_entry.php*"
+  to = "BACKEND_URL/barangay_record_entry.php"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/barangay_settlement_form.php*"
+  to = "BACKEND_URL/barangay_settlement_form.php"
+  status = 200
+  force = true
+
+# Demo/admin utilities
+[[redirects]]
+  from = "/seed_demo_users.php*"
+  to = "BACKEND_URL/seed_demo_users.php"
+  status = 200
+  force = true
+
+# Catch-all for any other .php files
+[[redirects]]
+  from = "/:path(*).php*"
+  to = "BACKEND_URL/:path.php"
+  status = 200
+  force = true
+
+# ====================================================================
+# SECURITY & BROWSER HEADERS
+# ====================================================================
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# Strict Content Security Policy (adjust if you add external resources)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' https: data:; font-src 'self' https://cdn.jsdelivr.net"

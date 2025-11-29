@@ -1,0 +1,166 @@
+Netlify + External Backend Deployment Checklist
+=================================================
+
+BEFORE YOU START
+================
+[ ] You have a GitHub/GitLab/Bitbucket account with your repo
+[ ] You have a Railway account (railway.app) or Render account (render.com)
+[ ] You have a Netlify account (netlify.com)
+[ ] Backend URL handy (we'll use it in step 6)
+
+
+PHASE 1: DEPLOY BACKEND
+=======================
+[ ] 1a. Log in to Railway (or Render)
+[ ] 1b. Create new project → Deploy from Git
+[ ] 1c. Select your eJustice repo
+[ ] 1d. Railway auto-detects Procfile and Dockerfile
+[ ] 1e. Add MySQL plugin (Railway → "+ Add Plugin" → MySQL)
+[ ] 1f. Set environment variables:
+       - DOC_ENC_KEY: (generate: openssl rand -hex 32)
+       - APP_ENV: production
+       - APP_DEBUG: false
+[ ] 1g. Wait for deployment to complete (Railway shows "Active" status)
+[ ] 1h. Copy your backend URL from Railway:
+       https://your-backend-project-random.railway.app
+
+
+PHASE 2: RUN DATABASE MIGRATIONS
+================================
+[ ] 2a. Verify backend is responding:
+       Open https://your-backend-url in browser → see login page
+[ ] 2b. Run migrations (choose ONE method):
+
+       Method A (phpMyAdmin):
+       - Open https://your-backend-url/phpmyadmin
+       - Select ejustice_portal database
+       - Import (in order):
+         1. sql/ejustice_portal.sql
+         2. sql/002_add_audit_logs.sql
+         3. sql/003_add_barangay_module.sql
+         4. sql/004_add_barangay_case_routing.sql
+
+       Method B (CLI):
+       - SSH into backend host
+       - Run: mysql -h $DB_HOST -u $DB_USER -p < sql/ejustice_portal.sql
+         (repeat for other 3 files)
+
+       Method C (PHP script):
+       - Create public/run_migrations.php (see NETLIFY_SETUP_GUIDE.md)
+       - Visit https://your-backend-url/run_migrations.php (logged in as admin)
+
+
+PHASE 3: UPDATE PROXY RULES
+===========================
+[ ] 3a. Edit `public/_redirects` in your repo:
+       - Replace "BACKEND_URL" with your actual backend URL
+       Example:
+         /api/*    https://your-backend-url/:splat  200!
+         /login.php    https://your-backend-url/login.php  200!
+       (Do this for ALL rules in the file)
+
+       OR: Edit `netlify.toml` (same replacement)
+
+[ ] 3b. Commit and push changes to Git:
+       git add netlify.toml public/_redirects
+       git commit -m "Update backend URL for Netlify proxy"
+       git push origin main
+
+
+PHASE 4: DEPLOY FRONTEND TO NETLIFY
+===================================
+[ ] 4a. Log in to Netlify (netlify.com)
+[ ] 4b. Click "Add new site" → "Connect to Git"
+[ ] 4c. Select your Git provider (GitHub, GitLab, Bitbucket)
+[ ] 4d. Authorize and select your eJustice repo
+[ ] 4e. Configure build:
+       - Base directory: (leave blank)
+       - Build command: (leave blank)
+       - Publish directory: public
+[ ] 4f. Click "Deploy site"
+[ ] 4g. Wait for Netlify to finish deploying (should be fast, < 1 min)
+[ ] 4h. Netlify gives you a domain like: https://your-site-name.netlify.app
+[ ] 4i. (Optional) Set a custom domain:
+       - Netlify → Site Settings → Domain Management
+       - Add your own domain (DNS changes required)
+
+
+PHASE 5: TEST END-TO-END
+=======================
+[ ] 5a. Open Netlify domain in browser: https://your-site-name.netlify.app
+[ ] 5b. Check that login page loads (no blank page or 404)
+[ ] 5c. Register a new complainant account
+[ ] 5d. Log in (session should persist on page reload)
+[ ] 5e. File a case (online filing)
+[ ] 5f. Upload a document
+[ ] 5g. View the document (should decrypt and show audit entry)
+[ ] 5h. Check audit logs as staff
+[ ] 5i. Test Barangay flow (if logged in as barangay staff):
+       - Record initial complaint
+       - Track mediation
+       - Generate settlement form
+       - Verify escalation to police blotter (if unresolved)
+
+
+PHASE 6: ONGOING MAINTENANCE
+============================
+[ ] 6a. Enable Netlify email notifications (optional):
+       Netlify Settings → Email notifications → on
+       You'll be notified of failed deploys
+
+[ ] 6b. Set up monitoring (optional):
+       - Railway → add error tracking
+       - Sentry.io (for PHP errors)
+       - LogRocket (for frontend)
+
+[ ] 6c. Backup database (Railway auto-backups daily):
+       Railway → Database → Backups (visible in dashboard)
+
+[ ] 6d. Document secrets and access:
+       - Store Railway API token securely
+       - Store DATABASE_URL and DOC_ENC_KEY in password manager
+       - Share Netlify admin credentials only with authorized users
+
+
+ROLLBACK / TROUBLESHOOTING
+==========================
+
+If login doesn't work:
+  [ ] Check backend URL in proxy rules (typo?)
+  [ ] Test backend directly: curl https://your-backend-url/login.php
+  [ ] Check Rails build logs: Railway → Deployments → View logs
+  [ ] Check Netlify deploy logs: Netlify → Deployments → View build log
+
+If sessions don't persist (logged out after redirect):
+  [ ] Check DevTools → Network → look for Set-Cookie headers
+  [ ] Ensure backend returns cookies without a fixed domain
+  [ ] Verify session.cookie_samesite in config/config.php
+
+If file upload/download fails:
+  [ ] Check backend storage limits (Railway: use volumes or S3)
+  [ ] Check backend logs for upload errors
+  [ ] Verify DOC_ENC_KEY is set correctly on backend
+
+If database migrations fail:
+  [ ] Check MySQL is running on Railway/Render
+  [ ] Check DATABASE_URL format is correct
+  [ ] Run migrations one at a time and check for errors
+
+
+QUICK REFERENCE
+===============
+Frontend: https://your-site-name.netlify.app
+Backend: https://your-backend-project.railway.app
+Railway Dashboard: https://railway.app/dashboard
+Netlify Dashboard: https://app.netlify.com
+
+Support:
+  - Railway: https://railway.app/support
+  - Netlify: https://support.netlify.com
+  - eJustice Docs: See NETLIFY_SETUP_GUIDE.md
+
+
+DONE! 🎉
+========
+Your eJustice Portal is now live on Netlify + Railway!
+Every git push to main will auto-deploy both frontend and backend.
